@@ -1,5 +1,10 @@
 /target
 
+# Python local environment and generated files
+.venv/
+__pycache__/
+*.py[cod]
+
 # Ignore local environment files for Lab 2
 .env
 .env.*

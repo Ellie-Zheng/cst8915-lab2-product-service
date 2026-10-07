@@ -1,49 +1,55 @@
 # Product Service
 
-The Product Service is a simple web service built using Rust and the Warp web framework. It is responsible for serving the product catalog, which includes a list of products that can be fetched via a RESTful API.
+This Python/Flask service returns the same three products as the original Rust service. The Store Front calls `GET /products` to load its catalog. Product data is defined in `app.py`; this service does not connect to RabbitMQ.
 
-## Requirements
+## API
 
-- Rust (latest stable version) and Cargo, installed below
-- Start inside the repository's `product-service` directory. The main guide already takes you there.
+`GET /products` returns a JSON array:
 
-## Setup Instructions
-
-1. Update the package list and install the build tools:
-
-   ```bash
-   sudo apt update
-   sudo apt install build-essential
-   ```
-
-2. Install Rust and accept the default installation:
-
-   ```bash
-   curl --proto '=https' --tlsv1.3 https://sh.rustup.rs -sSf | sh
-   ```
-
-3. Load the Rust tools into this terminal:
-
-   ```bash
-   source "$HOME/.cargo/env"
-   ```
-
-4. Build and start the service:
-
-   ```bash
-   cargo run
-   ```
-
-   Keep this terminal open. Cargo prints build output; the application itself does not print a listening message. Do not start a second copy from the main guide.
-
-The service binds to `0.0.0.0:3030` (all IPv4 interfaces). On the VM, test `http://localhost:3030/products`. From your laptop, use `http://<VM-PUBLIC-IP>:3030/products` with port 3030 allowed by the NSG. VS Code port forwarding is an optional alternative for accessing a forwarded port through your laptop's localhost.
-
-## Testing
-
-From another terminal:
-
-```bash
-curl http://localhost:3030/products
+```json
+[
+  {"id": 1, "name": "Dog Food", "price": 19.99},
+  {"id": 2, "name": "Cat Food", "price": 34.99},
+  {"id": 3, "name": "Bird Seeds", "price": 10.99}
+]
 ```
 
-Expect three products with IDs, names, and prices. You can also install the VS Code **REST Client** extension and run `test-product-service.http`.
+The response permits cross-origin requests so the separately hosted Store Front can read it.
+
+## Run and test locally on Windows (PowerShell)
+
+Install Python 3 and make sure the `py` launcher works. In the repository root, run:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe app.py
+```
+
+Keep that terminal open. In another terminal, test:
+
+```powershell
+curl.exe -i http://127.0.0.1:3030/products
+curl.exe -i -H "Origin: http://localhost:8080" http://127.0.0.1:3030/products
+```
+
+Both requests should return HTTP `200` and the three products. The second should also include `Access-Control-Allow-Origin: *`. You can also open `http://127.0.0.1:3030/products` in your browser or run `test-product-service.http` with the VS Code REST Client extension. Press `Ctrl+C` in the first terminal to stop the service.
+
+These commands use the project's virtual environment directly, so PowerShell script activation is not required.
+
+## Run locally on Linux or macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python app.py
+```
+
+Test with `curl -i http://127.0.0.1:3030/products`.
+
+## Configuration and Azure App Service
+
+`PORT` is optional for local execution and defaults to `3030`. Set it in the shell if needed; do not commit a real `.env` file. For example, in PowerShell: `$env:PORT = "3031"` before starting `app.py`.
+
+For Lab 3, create a **Linux** Azure App Service with a Python runtime and deploy this repository. Keep `app.py` and `requirements.txt` at the repository root. App Service detects the Flask object named `app` and starts it with Gunicorn, so the local `python app.py` command and `PORT=3030` are not Azure startup settings. Test the deployed service at `https://<your-product-app>.azurewebsites.net/products`.
